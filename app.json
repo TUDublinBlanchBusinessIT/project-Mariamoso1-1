@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "MyCare",
-    "slug": "MyCare",
+    "name": "Care Connect Guardian",
+    "slug": "care-connect-guardian",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
