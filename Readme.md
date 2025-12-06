@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html><head></head><body style="color: rgb(32, 33, 34); font-family: verdana, sans-serif; font-size: 12px;"><p>*****</p>
+<p><strong>Update. When uploading your CA. Please upload 2 files. 1 zip file with your project folder zipped up&nbsp; and 1 PDF/MS Word Doc with your reflection and prompts. Don't include the responses to your prompts as it would be too long. Just the prompts you feel tell the story of how you used AI. If you want you can include a link(s) to your chats</strong></p>
+<p>*****</p>
+<p>You are required to build a Mobile App in React Native.</p>
+<p>You can use the first CA (to design a mobile app). The app does not have to replicate everything you did for CA1 and it will be acceptable even if you only implement a subset of the functionality you envisaged in the first CA. You can, if you want, do something different from the idea you had in CA 1 but in this instance you need to do a new App Statement(not wireframes or process flows) to accompany your submission.</p>
+<p>The App Should at a minimum:</p>
+<ul>
+<li>Save data to Firebase</li>
+<li>Retrieve data from Firebase</li>
+</ul>
+<p>The app should gather some information or interactions from a user, process them in some way an give a result. Ideally it should be useful but it can be just a "Proof of Concept". This means only a small subset of the functionality may be actually working but a User using it should have a clear vision for what the App is supposed to do and how it is supposed to function.<br>The app should use the techniques used over the course of the Semester but, for high marks, students should try and implement some features and components not shown to them during the course of the semester. i.e. skills and abilities developed through the student's own research.</p>
+<p><strong><span style="text-decoration: underline;">UX</span></strong><br>The App should deliver a positive User eXperience. It should look good and be clear and easy to use. The app should be responsive – i.e. it should render well on different screen shapes and sizes.</p>
+<p><span style="text-decoration: underline;"><strong>Use of AI</strong></span><br>Students are expected to use Generative AI to assist with the building of their projects. Students may include any and all tools they discover to be useful in this space. E.g. ChatGPT, Copilot, Codewhisperer etc. A log of prompts and responses should be retained with the date and time of each prompt. Along with the project students should write a 1/2 page reflection on the use of AI in the project covering:<br>• &nbsp; &nbsp;Indicate which tools were used<br>• &nbsp; &nbsp;AI Usefulness – include examples where appropriate.<br>• &nbsp; &nbsp;AI Limitations – include examples where appropriate.<br>• &nbsp; &nbsp;The extent to which AI assisted or impeded your <span style="text-decoration: underline;"><strong>learning</strong></span> in relation to constructing apps using React Native<br>• &nbsp; &nbsp;The extent to which use of AI extended the level of functionality it was possible to include in the App</p>
+<p><span style="text-decoration: underline;"><strong>Project Demonstration</strong></span><br>On the week after Week 13 each student will be required to demonstrate their app during the regularly scheduled lab session from 3-5pm on Monday afternoon or between 8:45am and 10:30am on Wednesday. The demo will typically take 5 minutes</p>
+<ul>
+<li>If you don't show up to demo your project you will be awarded zero</li>
+<li>While demoing your project you need to be able to explain your code and how you wrote it. If I form the view during your demonstration that there's a chance that you didn't do the project yourself, I will stop the demo and it will be flagged for later re-assessment.</li>
+<li>The later re-assessment will be a Viva Voce. This is a University term for an Oral defense of your project. This will last longer(typically up to 30-40 minutes) and you will be required to explain your project in detail, including how you went about it and where you came to learn and understand the approaches that you took. If you cannot answer these questions, it will be assumed the work is not your own and you will be awarded a zero for the project.</li>
+</ul>
+<p></p></body></html>
