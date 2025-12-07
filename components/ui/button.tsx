@@ -35,21 +35,28 @@ const styles = StyleSheet.create({
   button: {
     paddingVertical: 14,
     paddingHorizontal: 16,
-    borderRadius: 8,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 8,
+    marginVertical: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   primary: {
-    backgroundColor: '#0052CC',
+    backgroundColor: '#43a28f',
   },
   secondary: {
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: '#0052CC',
+    borderColor: '#43a28f',
+    shadowOpacity: 0,
+    elevation: 0,
   },
   disabled: {
-    opacity: 0.5,
+    opacity: 0.6,
   },
   text: {
     fontSize: 16,
@@ -59,6 +66,6 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   secondaryText: {
-    color: '#0052CC',
+    color: '#43a28f',
   },
 });

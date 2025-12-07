@@ -12,6 +12,8 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
   const { login, error } = useAuth();
   const router = useRouter();
 
@@ -34,8 +36,9 @@ export default function LoginScreen() {
 
   return (
     <Container>
-      <View style={styles.content}>
-        <View style={styles.header}>
+      <View style={styles.scrollContent}>
+        {/* Logo Section */}
+        <View style={styles.logoSection}>
           <Image
             source={require('@/assets/images/logo.png')}
             style={styles.logo}
@@ -43,66 +46,89 @@ export default function LoginScreen() {
           />
         </View>
 
-        <View style={styles.form}>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email Address</Text>
-            <RNTextInput
-              style={styles.input}
-              placeholder="Enter your email"
-              placeholderTextColor="#999"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Password</Text>
-            <View style={styles.passwordContainer}>
-              <RNTextInput
-                style={styles.passwordInput}
-                placeholder="Enter your password"
-                placeholderTextColor="#999"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-              />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                <MaterialCommunityIcons
-                  name={showPassword ? 'eye' : 'eye-off'}
-                  size={20}
-                  color="#666"
-                  style={styles.iconPadding}
+        {/* Login Card */}
+        <View style={styles.card}>
+          <View style={styles.form}>
+            {/* Email Input */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Email Address</Text>
+              <View style={[styles.inputWrapper, emailFocused && styles.inputWrapperFocused]}>
+                <RNTextInput
+                  style={styles.input}
+                  placeholder="you@example.com"
+                  placeholderTextColor="#999"
+                  value={email}
+                  onChangeText={setEmail}
+                  onFocus={() => setEmailFocused(true)}
+                  onBlur={() => setEmailFocused(false)}
+                  keyboardType="email-address"
                 />
+              </View>
+            </View>
+
+            {/* Password Input */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Password</Text>
+              <View style={[styles.inputWrapper, styles.passwordWrapper, passwordFocused && styles.inputWrapperFocused]}>
+                <RNTextInput
+                  style={styles.passwordInput}
+                  placeholder="Enter your password"
+                  placeholderTextColor="#999"
+                  value={password}
+                  onChangeText={setPassword}
+                  onFocus={() => setPasswordFocused(true)}
+                  onBlur={() => setPasswordFocused(false)}
+                  secureTextEntry={!showPassword}
+                />
+                <TouchableOpacity 
+                  style={styles.eyeButton}
+                  onPress={() => setShowPassword(!showPassword)}
+                >
+                  <MaterialCommunityIcons
+                    name={showPassword ? 'eye' : 'eye-off'}
+                    size={20}
+                    color="#999"
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Remember & Forgot */}
+            <View style={styles.optionsRow}>
+              <TouchableOpacity
+                style={styles.checkboxContainer}
+                onPress={() => setRememberMe(!rememberMe)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
+                  {rememberMe && <MaterialCommunityIcons name="check" size={12} color="#fff" />}
+                </View>
+                <Text style={styles.rememberText}>Remember me</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => router.push('/(auth)/forgot-password')} activeOpacity={0.7}>
+                <Text style={styles.forgotLink}>Forgot password?</Text>
               </TouchableOpacity>
             </View>
+
+            {error && <Text style={styles.errorMessage}>{error}</Text>}
+
+            {/* Sign In Button */}
+            <Button label="Sign In" onPress={handleLogin} loading={loading} />
           </View>
 
-          <View style={styles.optionsContainer}>
-            <TouchableOpacity
-              style={styles.checkboxContainer}
-              onPress={() => setRememberMe(!rememberMe)}
-            >
-              <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
-                {rememberMe && <Text style={styles.checkmark}>✓</Text>}
-              </View>
-              <Text style={styles.rememberText}>Remember me</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => router.push('/(auth)/forgot-password')}>
-              <Text style={styles.forgotLink}>Forgot password?</Text>
-            </TouchableOpacity>
-          </View>
-
-          {error && <Text style={styles.errorMessage}>{error}</Text>}
-
-          <Button label="Sign In" onPress={handleLogin} loading={loading} />
-
+          {/* Sign Up Link */}
           <View style={styles.signupContainer}>
             <Text style={styles.signupText}>Don&apos;t have an account? </Text>
-            <TouchableOpacity onPress={() => router.push('/(auth)/signup')}>
+            <TouchableOpacity onPress={() => router.push('/(auth)/signup')} activeOpacity={0.7}>
               <Text style={styles.signupLink}>Sign Up</Text>
             </TouchableOpacity>
           </View>
+        </View>
+
+        {/* Security Message */}
+        <View style={styles.securityMessage}>
+          <MaterialCommunityIcons name="shield-check" size={16} color="#43a28f" />
+          <Text style={styles.securityText}>Your data is encrypted and secure</Text>
         </View>
       </View>
     </Container>
@@ -110,69 +136,82 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: {
+  scrollContent: {
     flex: 1,
-    justifyContent: 'space-between',
-    paddingHorizontal: 0,
+    paddingHorizontal: 16,
+    paddingVertical: 24,
+    justifyContent: 'flex-start',
   },
-  header: {
+  logoSection: {
     alignItems: 'center',
-    paddingTop: 60,
-    paddingBottom: 40,
-    backgroundColor: '#f5f5f5',
+    marginBottom: 32,
+    paddingTop: 20,
   },
   logo: {
-    width: 150,
-    height: 150,
+    width: 120,
+    height: 120,
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 28,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
   },
   form: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
+    gap: 20,
   },
   inputGroup: {
-    marginBottom: 20,
+    gap: 10,
   },
   label: {
     fontSize: 14,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 8,
   },
-  input: {
-    borderWidth: 0,
-    borderRadius: 8,
+  inputWrapper: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 12,
+    backgroundColor: '#fff',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    fontSize: 16,
-    color: '#333',
-    backgroundColor: '#e8f2f7',
-  },
-  passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
-    paddingHorizontal: 12,
+  },
+  inputWrapperFocused: {
+    borderColor: '#43a28f',
+    backgroundColor: '#f9fffe',
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
+    padding: 0,
+  },
+  passwordWrapper: {
+    paddingRight: 8,
   },
   passwordInput: {
     flex: 1,
-    paddingHorizontal: 4,
-    paddingVertical: 12,
     fontSize: 16,
     color: '#333',
+    padding: 0,
   },
-  eyeIcon: {
-    fontSize: 20,
-    paddingRight: 8,
+  eyeButton: {
+    padding: 8,
   },
-  iconPadding: {
-    paddingRight: 12,
-  },
-  optionsContainer: {
+  optionsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
+    marginTop: 4,
   },
   checkboxContainer: {
     flexDirection: 'row',
@@ -180,51 +219,66 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   checkbox: {
-    width: 18,
-    height: 18,
-    borderWidth: 2,
+    width: 16,
+    height: 16,
+    borderWidth: 1.5,
     borderColor: '#ddd',
     borderRadius: 3,
     alignItems: 'center',
     justifyContent: 'center',
   },
   checkboxChecked: {
-    backgroundColor: '#1a9b8e',
-    borderColor: '#1a9b8e',
-  },
-  checkmark: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
+    backgroundColor: '#43a28f',
+    borderColor: '#43a28f',
   },
   rememberText: {
-    fontSize: 14,
-    color: '#999',
+    fontSize: 13,
+    color: '#666',
   },
   forgotLink: {
-    fontSize: 14,
-    color: '#0052CC',
+    fontSize: 13,
+    color: '#43a28f',
     fontWeight: '600',
   },
   errorMessage: {
     color: '#FF3B30',
-    fontSize: 14,
-    marginBottom: 16,
+    fontSize: 13,
     textAlign: 'center',
+    marginVertical: 8,
   },
   signupContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 20,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
   },
   signupText: {
-    fontSize: 14,
-    color: '#999',
+    fontSize: 13,
+    color: '#666',
   },
   signupLink: {
-    fontSize: 14,
-    color: '#0052CC',
+    fontSize: 13,
+    color: '#43a28f',
     fontWeight: '600',
+  },
+  securityMessage: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: 'rgba(67, 162, 143, 0.05)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+  },
+  securityText: {
+    fontSize: 12,
+    color: '#666',
   },
 });

@@ -6,7 +6,7 @@ interface ContainerProps {
   scrollable?: boolean;
 }
 
-export function Container({ children, style, scrollable = false }: ContainerProps) {
+export function Container({ children, style, scrollable = true }: ContainerProps) {
   const content = (
     <View style={[styles.container, style]}>
       {children}
@@ -16,7 +16,7 @@ export function Container({ children, style, scrollable = false }: ContainerProp
   if (scrollable) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
           {content}
         </ScrollView>
       </SafeAreaView>
