@@ -33,7 +33,7 @@ export function Button({
 
 const styles = StyleSheet.create({
   button: {
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 16,
     borderRadius: 8,
     alignItems: 'center',
@@ -41,24 +41,24 @@ const styles = StyleSheet.create({
     marginVertical: 8,
   },
   primary: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0052CC',
   },
   secondary: {
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: '#007AFF',
+    borderColor: '#0052CC',
   },
   disabled: {
     opacity: 0.5,
   },
   text: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   primaryText: {
     color: '#fff',
   },
   secondaryText: {
-    color: '#007AFF',
+    color: '#0052CC',
   },
 });

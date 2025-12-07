@@ -1,15 +1,17 @@
 import { useAuth } from '@/Context/Authcontext';
 import { Button } from '@/components/ui/button';
 import { Container } from '@/components/ui/container';
-import { TextInput } from '@/components/ui/textinput';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, TextInput as RNTextInput, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { login, error } = useAuth();
   const router = useRouter();
 
@@ -34,39 +36,72 @@ export default function LoginScreen() {
     <Container>
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.title}>Care Connect</Text>
-          <Text style={styles.subtitle}>Guardian</Text>
-          <Text style={styles.description}>Track domiciliary care visits</Text>
+          <Image
+            source={require('@/assets/images/logo.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
         </View>
 
         <View style={styles.form}>
-          <TextInput
-            label="Email"
-            placeholder="Enter your email"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-          />
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Email Address</Text>
+            <RNTextInput
+              style={styles.input}
+              placeholder="Enter your email"
+              placeholderTextColor="#999"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+            />
+          </View>
 
-          <TextInput
-            label="Password"
-            placeholder="Enter your password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Password</Text>
+            <View style={styles.passwordContainer}>
+              <RNTextInput
+                style={styles.passwordInput}
+                placeholder="Enter your password"
+                placeholderTextColor="#999"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+              />
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                <MaterialCommunityIcons
+                  name={showPassword ? 'eye' : 'eye-off'}
+                  size={20}
+                  color="#666"
+                  style={styles.iconPadding}
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <View style={styles.optionsContainer}>
+            <TouchableOpacity
+              style={styles.checkboxContainer}
+              onPress={() => setRememberMe(!rememberMe)}
+            >
+              <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
+                {rememberMe && <Text style={styles.checkmark}>✓</Text>}
+              </View>
+              <Text style={styles.rememberText}>Remember me</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/(auth)/forgot-password')}>
+              <Text style={styles.forgotLink}>Forgot password?</Text>
+            </TouchableOpacity>
+          </View>
 
           {error && <Text style={styles.errorMessage}>{error}</Text>}
 
-          <Button label="Login" onPress={handleLogin} loading={loading} />
+          <Button label="Sign In" onPress={handleLogin} loading={loading} />
 
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Don&apos;t have an account? </Text>
-            <Button
-              label="Sign Up"
-              onPress={() => router.push('/(auth)/signup')}
-              variant="secondary"
-            />
+          <View style={styles.signupContainer}>
+            <Text style={styles.signupText}>Don&apos;t have an account? </Text>
+            <TouchableOpacity onPress={() => router.push('/(auth)/signup')}>
+              <Text style={styles.signupLink}>Sign Up</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </View>
@@ -78,42 +113,118 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     justifyContent: 'space-between',
+    paddingHorizontal: 0,
   },
   header: {
     alignItems: 'center',
-    marginTop: 40,
+    paddingTop: 60,
+    paddingBottom: 40,
+    backgroundColor: '#f5f5f5',
   },
-  title: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#007AFF',
-  },
-  subtitle: {
-    fontSize: 28,
-    fontWeight: '600',
-    color: '#333',
-    marginTop: 4,
-  },
-  description: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 12,
+  logo: {
+    width: 150,
+    height: 150,
   },
   form: {
-    marginBottom: 40,
+    paddingHorizontal: 20,
+    paddingVertical: 24,
+  },
+  inputGroup: {
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  input: {
+    borderWidth: 0,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: '#333',
+    backgroundColor: '#e8f2f7',
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+  },
+  passwordInput: {
+    flex: 1,
+    paddingHorizontal: 4,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: '#333',
+  },
+  eyeIcon: {
+    fontSize: 20,
+    paddingRight: 8,
+  },
+  iconPadding: {
+    paddingRight: 12,
+  },
+  optionsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  checkbox: {
+    width: 18,
+    height: 18,
+    borderWidth: 2,
+    borderColor: '#ddd',
+    borderRadius: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: '#1a9b8e',
+    borderColor: '#1a9b8e',
+  },
+  checkmark: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  rememberText: {
+    fontSize: 14,
+    color: '#999',
+  },
+  forgotLink: {
+    fontSize: 14,
+    color: '#0052CC',
+    fontWeight: '600',
   },
   errorMessage: {
     color: '#FF3B30',
     fontSize: 14,
-    marginBottom: 12,
+    marginBottom: 16,
     textAlign: 'center',
   },
-  footer: {
-    marginTop: 16,
+  signupContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
+    marginTop: 20,
   },
-  footerText: {
+  signupText: {
     fontSize: 14,
-    color: '#666',
+    color: '#999',
+  },
+  signupLink: {
+    fontSize: 14,
+    color: '#0052CC',
+    fontWeight: '600',
   },
 });
