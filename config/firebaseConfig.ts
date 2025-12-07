@@ -1,16 +1,15 @@
-import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
+import { initializeApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBQ3fNtZgFBjqlSFC-rBdjfcUxMZhoN8Og",
-  authDomain: "careconnect-56620.firebaseapp.com",
-  projectId: "careconnect-56620",
-  storageBucket: "careconnect-56620.firebasestorage.app",
-  messagingSenderId: "448044170176",
-  appId: "1:448044170176:web:b8bf5f25f7183cd0bba625",
-  measurementId: "G-KPDV2NXBCG"
+  apiKey: 'YOUR_API_KEY',
+  authDomain: 'YOUR_AUTH_DOMAIN',
+  projectId: 'YOUR_PROJECT_ID',
+  storageBucket: 'YOUR_STORAGE_BUCKET',
+  messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
+  appId: 'YOUR_APP_ID',
 };
 
 const app = initializeApp(firebaseConfig);
@@ -18,5 +17,3 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
-
-export default app;
