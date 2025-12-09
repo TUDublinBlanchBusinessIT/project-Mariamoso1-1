@@ -4,7 +4,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, ActivityIndicator, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface Visit {
   id: string;
@@ -16,6 +16,7 @@ interface Visit {
   notes?: string;
   userId: string;
   timestamp: number;
+  acknowledged?: boolean;
 }
 
 export default function HomeScreen() {
@@ -57,20 +58,20 @@ export default function HomeScreen() {
       }));
       setAllVisits(mappedAllVisits);
 
-      // Load today's visits for the list
-      const todayData = await getTodaysVisits(user.uid);
-      const mappedTodayVisits: Visit[] = todayData.map((doc: any) => ({
-        id: doc.id || '',
-        caregiverName: doc.caregiverName || '',
-        scheduledDate: doc.scheduledDate || '',
-        scheduledTime: doc.scheduledTime || '',
-        actualArrival: doc.actualArrival,
-        status: doc.status || 'scheduled',
-        notes: doc.notes,
-        userId: doc.userId || '',
-        timestamp: doc.timestamp || Date.now(),
-      }));
-      setTodaysVisits(mappedTodayVisits);
+      // Filter today's visits from all visits (client-side filtering as workaround)
+      const today = new Date().toISOString().split('T')[0];
+      const todayVisitsFiltered = mappedAllVisits.filter(
+        (visit) => visit.scheduledDate === today
+      );
+
+      // Sort by scheduled time (chronological order)
+      todayVisitsFiltered.sort((a, b) => {
+        const timeA = a.scheduledTime || '00:00';
+        const timeB = b.scheduledTime || '00:00';
+        return timeA.localeCompare(timeB);
+      });
+
+      setTodaysVisits(todayVisitsFiltered);
     } catch (error) {
       console.error('Error loading visits:', error);
       Alert.alert('Error', 'Failed to load visits');
@@ -164,9 +165,12 @@ export default function HomeScreen() {
   const completedVisits = allVisits.filter((v) => v.status === 'completed').length;
   const upcomingVisits = allVisits.filter((v) => v.status === 'scheduled').length;
 
-  // Filter today's visits for ongoing alerts
+  // Filter today's visits for ongoing alerts (only unacknowledged)
   const today = new Date().toISOString().split('T')[0];
-  const ongoingAlerts = todaysVisits.filter((v) => v.status === 'substituted' || v.status === 'delayed').length;
+  const ongoingAlerts = todaysVisits.filter((v) =>
+    (v.status === 'substituted' || v.status === 'delayed' || v.status === 'missed') &&
+    !v.acknowledged
+  ).length;
 
   return (
     <SafeAreaView style={styles.safeArea}>

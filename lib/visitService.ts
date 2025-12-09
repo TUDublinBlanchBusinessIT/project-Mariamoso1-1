@@ -1,5 +1,5 @@
 import { db } from '@/config/firebaseConfig';
-import { addDoc, collection, doc, getDocs, query, Timestamp, updateDoc, where } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, getDocs, query, Timestamp, updateDoc, where } from 'firebase/firestore';
 
 export interface Visit {
   id?: string;
@@ -11,6 +11,7 @@ export interface Visit {
   status: 'scheduled' | 'completed' | 'missed' | 'substituted' | 'delayed';
   notes?: string;
   timestamp: number;
+  acknowledged?: boolean;
 }
 
 /**
@@ -85,7 +86,7 @@ export const getTodaysVisits = async (userId: string) => {
       where('scheduledDate', '>=', today.toISOString().split('T')[0]),
       where('scheduledDate', '<', tomorrow.toISOString().split('T')[0])
     );
-    
+
     const querySnapshot = await getDocs(q);
     const visits: Visit[] = [];
     querySnapshot.forEach((doc) => {
@@ -97,6 +98,48 @@ export const getTodaysVisits = async (userId: string) => {
     return visits;
   } catch (error) {
     console.error('Error getting today visits:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update a visit
+ */
+export const updateVisit = async (visitId: string, visitData: Partial<Omit<Visit, 'id' | 'userId' | 'timestamp'>>) => {
+  try {
+    const visitRef = doc(db, 'visits', visitId);
+    await updateDoc(visitRef, visitData);
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating visit:', error);
+    throw error;
+  }
+};
+
+/**
+ * Delete a visit
+ */
+export const deleteVisit = async (visitId: string) => {
+  try {
+    const visitRef = doc(db, 'visits', visitId);
+    await deleteDoc(visitRef);
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting visit:', error);
+    throw error;
+  }
+};
+
+/**
+ * Acknowledge an alert (mark visit as acknowledged)
+ */
+export const acknowledgeAlert = async (visitId: string) => {
+  try {
+    const visitRef = doc(db, 'visits', visitId);
+    await updateDoc(visitRef, { acknowledged: true });
+    return { success: true };
+  } catch (error) {
+    console.error('Error acknowledging alert:', error);
     throw error;
   }
 };

@@ -1,16 +1,21 @@
 import { Container } from '@/components/ui/container';
 import { useAuth } from '@/Context/Authcontext';
-import { getUserVisits } from '@/lib/visitService';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { deleteVisit, getUserVisits, updateVisit } from '@/lib/visitService';
+import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
+  Modal,
   RefreshControl,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
+  TouchableOpacity,
   View,
 } from 'react-native';
 
@@ -24,13 +29,28 @@ interface Visit {
   notes?: string;
   userId: string;
   timestamp: number;
+  acknowledged?: boolean;
 }
+
+const STATUS_OPTIONS = ['scheduled', 'completed', 'missed', 'substituted', 'delayed'] as const;
 
 export default function VisitsScreen() {
   const { user } = useAuth();
   const [visits, setVisits] = useState<Visit[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editingVisit, setEditingVisit] = useState<Visit | null>(null);
+
+  // Edit form states
+  const [editCaregiverName, setEditCaregiverName] = useState('');
+  const [editScheduledDate, setEditScheduledDate] = useState(new Date());
+  const [editScheduledTime, setEditScheduledTime] = useState(new Date());
+  const [editStatus, setEditStatus] = useState<'scheduled' | 'completed' | 'missed' | 'substituted' | 'delayed'>('scheduled');
+  const [editNotes, setEditNotes] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [showStatusPicker, setShowStatusPicker] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -123,6 +143,99 @@ export default function VisitsScreen() {
     });
   };
 
+  const formatDateForInput = (date: Date) => {
+    return date.toISOString().split('T')[0];
+  };
+
+  const formatTimeForInput = (date: Date) => {
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
+
+  const handleEdit = (visit: Visit) => {
+    setEditingVisit(visit);
+    setEditCaregiverName(visit.caregiverName);
+
+    // Parse date
+    const [year, month, day] = visit.scheduledDate.split('-').map(Number);
+    setEditScheduledDate(new Date(year, month - 1, day));
+
+    // Parse time
+    const [hours, minutes] = visit.scheduledTime.split(':').map(Number);
+    const timeDate = new Date();
+    timeDate.setHours(hours, minutes);
+    setEditScheduledTime(timeDate);
+
+    setEditStatus(visit.status);
+    setEditNotes(visit.notes || '');
+    setEditModalVisible(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editCaregiverName.trim()) {
+      Alert.alert('Error', 'Please enter caregiver name');
+      return;
+    }
+
+    if (!editingVisit?.id) return;
+
+    try {
+      await updateVisit(editingVisit.id, {
+        caregiverName: editCaregiverName.trim(),
+        scheduledDate: formatDateForInput(editScheduledDate),
+        scheduledTime: formatTimeForInput(editScheduledTime),
+        status: editStatus,
+        notes: editNotes.trim() || undefined,
+      });
+
+      Alert.alert('Success', 'Visit updated successfully');
+      setEditModalVisible(false);
+      await loadVisits();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update visit');
+      console.error('Error updating visit:', error);
+    }
+  };
+
+  const handleDelete = (visitId: string, caregiverName: string) => {
+    Alert.alert(
+      'Delete Visit',
+      `Are you sure you want to delete the visit with ${caregiverName}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteVisit(visitId);
+              Alert.alert('Success', 'Visit deleted successfully');
+              await loadVisits();
+            } catch (error) {
+              Alert.alert('Error', 'Failed to delete visit');
+              console.error('Error deleting visit:', error);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDateChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      setEditScheduledDate(selectedDate);
+    }
+  };
+
+  const handleTimeChange = (event: any, selectedTime?: Date) => {
+    setShowTimePicker(false);
+    if (selectedTime) {
+      setEditScheduledTime(selectedTime);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
@@ -190,6 +303,24 @@ export default function VisitsScreen() {
                     <Text style={styles.notesText}>{visit.notes}</Text>
                   </View>
                 )}
+
+                {/* Action Buttons */}
+                <View style={styles.actionButtons}>
+                  <TouchableOpacity
+                    style={styles.editButton}
+                    onPress={() => handleEdit(visit)}
+                  >
+                    <MaterialIcons name="edit" size={18} color="#007AFF" />
+                    <Text style={styles.editButtonText}>Edit</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={() => handleDelete(visit.id, visit.caregiverName)}
+                  >
+                    <MaterialIcons name="delete" size={18} color="#FF3B30" />
+                    <Text style={styles.deleteButtonText}>Delete</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             ))}
           </View>
@@ -197,6 +328,131 @@ export default function VisitsScreen() {
 
         <View style={styles.bottomSpacing} />
       </ScrollView>
+
+      {/* Edit Modal */}
+      <Modal
+        visible={editModalVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setEditModalVisible(false)}
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={() => setEditModalVisible(false)}>
+              <Text style={styles.modalCancelText}>Cancel</Text>
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Edit Visit</Text>
+            <TouchableOpacity onPress={handleSaveEdit}>
+              <Text style={styles.modalSaveText}>Save</Text>
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.modalContent}>
+            {/* Caregiver Name */}
+            <View style={styles.modalSection}>
+              <Text style={styles.modalLabel}>Caregiver Name *</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="Enter caregiver name"
+                value={editCaregiverName}
+                onChangeText={setEditCaregiverName}
+                placeholderTextColor="#999"
+              />
+            </View>
+
+            {/* Scheduled Date */}
+            <View style={styles.modalSection}>
+              <Text style={styles.modalLabel}>Scheduled Date *</Text>
+              <TouchableOpacity style={styles.modalDateButton} onPress={() => setShowDatePicker(true)}>
+                <MaterialIcons name="calendar-today" size={20} color="#007AFF" />
+                <Text style={styles.modalDateText}>{formatDateForInput(editScheduledDate)}</Text>
+              </TouchableOpacity>
+              {showDatePicker && (
+                <DateTimePicker
+                  value={editScheduledDate}
+                  mode="date"
+                  display="spinner"
+                  onChange={handleDateChange}
+                />
+              )}
+            </View>
+
+            {/* Scheduled Time */}
+            <View style={styles.modalSection}>
+              <Text style={styles.modalLabel}>Scheduled Time *</Text>
+              <TouchableOpacity style={styles.modalDateButton} onPress={() => setShowTimePicker(true)}>
+                <MaterialIcons name="access-time" size={20} color="#007AFF" />
+                <Text style={styles.modalDateText}>{formatTimeForInput(editScheduledTime)}</Text>
+              </TouchableOpacity>
+              {showTimePicker && (
+                <DateTimePicker
+                  value={editScheduledTime}
+                  mode="time"
+                  display="spinner"
+                  onChange={handleTimeChange}
+                />
+              )}
+            </View>
+
+            {/* Status */}
+            <View style={styles.modalSection}>
+              <Text style={styles.modalLabel}>Status</Text>
+              <TouchableOpacity style={styles.modalDateButton} onPress={() => setShowStatusPicker(true)}>
+                <MaterialIcons name="check-circle-outline" size={20} color="#007AFF" />
+                <Text style={styles.modalDateText}>{editStatus}</Text>
+              </TouchableOpacity>
+              <Modal visible={showStatusPicker} transparent animationType="slide">
+                <View style={styles.statusModalOverlay}>
+                  <View style={styles.statusPickerContainer}>
+                    <View style={styles.statusPickerHeader}>
+                      <Text style={styles.statusPickerTitle}>Select Status</Text>
+                      <TouchableOpacity onPress={() => setShowStatusPicker(false)}>
+                        <Text style={styles.statusPickerClose}>Done</Text>
+                      </TouchableOpacity>
+                    </View>
+                    {STATUS_OPTIONS.map((option) => (
+                      <TouchableOpacity
+                        key={option}
+                        style={[
+                          styles.statusOption,
+                          editStatus === option && styles.statusOptionSelected,
+                        ]}
+                        onPress={() => {
+                          setEditStatus(option);
+                          setShowStatusPicker(false);
+                        }}
+                      >
+                        <Text
+                          style={[
+                            styles.statusOptionText,
+                            editStatus === option && styles.statusOptionTextSelected,
+                          ]}
+                        >
+                          {option}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              </Modal>
+            </View>
+
+            {/* Notes */}
+            <View style={styles.modalSection}>
+              <Text style={styles.modalLabel}>Notes (Optional)</Text>
+              <TextInput
+                style={[styles.modalInput, styles.modalNotesInput]}
+                placeholder="Add any notes about this visit"
+                value={editNotes}
+                onChangeText={setEditNotes}
+                multiline
+                numberOfLines={4}
+                placeholderTextColor="#999"
+              />
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -344,5 +600,161 @@ const styles = StyleSheet.create({
   },
   bottomSpacing: {
     height: 20,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  editButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    backgroundColor: '#f0f7ff',
+    borderRadius: 8,
+    gap: 6,
+  },
+  editButtonText: {
+    color: '#007AFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  deleteButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    backgroundColor: '#fff0f0',
+    borderRadius: 8,
+    gap: 6,
+  },
+  deleteButtonText: {
+    color: '#FF3B30',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#333',
+  },
+  modalCancelText: {
+    fontSize: 16,
+    color: '#666',
+  },
+  modalSaveText: {
+    fontSize: 16,
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  modalContent: {
+    flex: 1,
+    padding: 20,
+  },
+  modalSection: {
+    marginBottom: 24,
+  },
+  modalLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: '#333',
+    backgroundColor: '#f9f9f9',
+  },
+  modalNotesInput: {
+    textAlignVertical: 'top',
+    paddingVertical: 12,
+    height: 100,
+  },
+  modalDateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#f9f9f9',
+    gap: 12,
+  },
+  modalDateText: {
+    fontSize: 16,
+    color: '#333',
+    flex: 1,
+  },
+  statusModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  statusPickerContainer: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingVertical: 16,
+  },
+  statusPickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  statusPickerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+  },
+  statusPickerClose: {
+    fontSize: 16,
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  statusOption: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  statusOptionSelected: {
+    backgroundColor: '#f0f7ff',
+  },
+  statusOptionText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  statusOptionTextSelected: {
+    color: '#007AFF',
+    fontWeight: '600',
   },
 });
