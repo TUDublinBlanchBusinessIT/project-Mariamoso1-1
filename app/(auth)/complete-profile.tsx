@@ -4,30 +4,30 @@ import { Container } from '@/components/ui/container';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Image, TextInput as RNTextInput, StyleSheet, Text, TouchableOpacity, View, Modal, ScrollView } from 'react-native';
+import {
+  Alert,
+  Image,
+  Modal,
+  StyleSheet,
+  Text,
+  TextInput as RNTextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { pickImage, showImageSourcePicker } from '@/lib/imageUtils';
-import { uploadProfilePicture } from '@/lib/userService';
+import { createUserProfile, uploadProfilePicture } from '@/lib/userService';
 
 const RELATIONSHIP_OPTIONS = ['Parent', 'Relative', 'Guardian'] as const;
 
-export default function SignupScreen() {
+export default function CompleteProfileScreen() {
+  const { user, refreshProfile } = useAuth();
+  const router = useRouter();
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [relationship, setRelationship] = useState<'Parent' | 'Relative' | 'Guardian'>('Parent');
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [termsAccepted, setTermsAccepted] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showRelationshipPicker, setShowRelationshipPicker] = useState(false);
   const [nameFocused, setNameFocused] = useState(false);
-  const [emailFocused, setEmailFocused] = useState(false);
-  const [passwordFocused, setPasswordFocused] = useState(false);
-  const [confirmPasswordFocused, setConfirmPasswordFocused] = useState(false);
-  const { signup, error } = useAuth();
-  const router = useRouter();
 
   const handlePickImage = async () => {
     const source = await showImageSourcePicker();
@@ -39,9 +39,9 @@ export default function SignupScreen() {
     }
   };
 
-  const handleSignup = async () => {
-    if (!name || !email || !password || !confirmPassword) {
-      Alert.alert('Error', 'Please fill in all fields');
+  const handleComplete = async () => {
+    if (!name.trim()) {
+      Alert.alert('Error', 'Please enter your name');
       return;
     }
 
@@ -50,33 +50,32 @@ export default function SignupScreen() {
       return;
     }
 
-    if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
-      return;
-    }
-
-    if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
-      return;
-    }
-
-    if (!termsAccepted) {
-      Alert.alert('Error', 'Please accept the Terms of Service and Privacy Policy');
+    if (!user) {
+      Alert.alert('Error', 'User not authenticated');
       return;
     }
 
     setLoading(true);
     try {
-      // Upload profile picture first (need uid, so we'll do this in auth context)
-      // For now, we'll pass the local URI and upload in the context
-      await signup(email, password, {
+      // Upload profile picture
+      const photoURL = await uploadProfilePicture(user.uid, profileImage);
+
+      // Create user profile
+      await createUserProfile(user.uid, user.email || '', {
         name: name.trim(),
         relationship,
-        photoURL: profileImage, // Will be uploaded in auth context
+        photoURL,
       });
-      router.replace('/(tabs)');
-    } catch {
-      Alert.alert('Signup Failed', error || 'Please try again');
+
+      // Refresh profile in context
+      await refreshProfile();
+
+      Alert.alert('Success', 'Profile completed!', [
+        { text: 'OK', onPress: () => router.replace('/(tabs)') },
+      ]);
+    } catch (error) {
+      console.error('Error completing profile:', error);
+      Alert.alert('Error', 'Failed to complete profile. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -94,12 +93,19 @@ export default function SignupScreen() {
           />
         </View>
 
-        {/* Sign Up Card */}
+        {/* Card */}
         <View style={styles.card}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Complete Your Profile</Text>
+            <Text style={styles.subtitle}>
+              We've added new profile features! Please complete your profile to continue.
+            </Text>
+          </View>
+
           <View style={styles.form}>
-            {/* Full Name Input */}
+            {/* Name Input */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Full Name</Text>
+              <Text style={styles.label}>Full Name *</Text>
               <View style={[styles.inputWrapper, nameFocused && styles.inputWrapperFocused]}>
                 <RNTextInput
                   style={styles.input}
@@ -113,74 +119,16 @@ export default function SignupScreen() {
               </View>
             </View>
 
-            {/* Email Input */}
+            {/* Email (Read-only) */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Email Address</Text>
-              <View style={[styles.inputWrapper, emailFocused && styles.inputWrapperFocused]}>
+              <View style={[styles.inputWrapper, styles.inputWrapperDisabled]}>
                 <RNTextInput
-                  style={styles.input}
-                  placeholder="you@example.com"
-                  placeholderTextColor="#999"
-                  value={email}
-                  onChangeText={setEmail}
-                  onFocus={() => setEmailFocused(true)}
-                  onBlur={() => setEmailFocused(false)}
-                  keyboardType="email-address"
+                  style={[styles.input, styles.inputDisabled]}
+                  value={user?.email || ''}
+                  editable={false}
                 />
-              </View>
-            </View>
-
-            {/* Password Input */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Password</Text>
-              <View style={[styles.inputWrapper, styles.passwordWrapper, passwordFocused && styles.inputWrapperFocused]}>
-                <RNTextInput
-                  style={styles.passwordInput}
-                  placeholder="Create a strong password"
-                  placeholderTextColor="#999"
-                  value={password}
-                  onChangeText={setPassword}
-                  onFocus={() => setPasswordFocused(true)}
-                  onBlur={() => setPasswordFocused(false)}
-                  secureTextEntry={!showPassword}
-                />
-                <TouchableOpacity
-                  style={styles.eyeButton}
-                  onPress={() => setShowPassword(!showPassword)}
-                >
-                  <MaterialCommunityIcons
-                    name={showPassword ? 'eye' : 'eye-off'}
-                    size={20}
-                    color="#999"
-                  />
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Confirm Password Input */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Confirm Password</Text>
-              <View style={[styles.inputWrapper, styles.passwordWrapper, confirmPasswordFocused && styles.inputWrapperFocused]}>
-                <RNTextInput
-                  style={styles.passwordInput}
-                  placeholder="Confirm your password"
-                  placeholderTextColor="#999"
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  onFocus={() => setConfirmPasswordFocused(true)}
-                  onBlur={() => setConfirmPasswordFocused(false)}
-                  secureTextEntry={!showConfirmPassword}
-                />
-                <TouchableOpacity
-                  style={styles.eyeButton}
-                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                >
-                  <MaterialCommunityIcons
-                    name={showConfirmPassword ? 'eye' : 'eye-off'}
-                    size={20}
-                    color="#999"
-                  />
-                </TouchableOpacity>
+                <MaterialCommunityIcons name="lock" size={16} color="#999" />
               </View>
             </View>
 
@@ -199,10 +147,7 @@ export default function SignupScreen() {
             {/* Profile Picture Picker */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Profile Picture *</Text>
-              <TouchableOpacity
-                style={styles.imagePickerButton}
-                onPress={handlePickImage}
-              >
+              <TouchableOpacity style={styles.imagePickerButton} onPress={handlePickImage}>
                 {profileImage ? (
                   <Image source={{ uri: profileImage }} style={styles.profileImagePreview} />
                 ) : (
@@ -214,37 +159,15 @@ export default function SignupScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Terms Agreement */}
-            <TouchableOpacity
-              style={styles.termsContainer}
-              onPress={() => setTermsAccepted(!termsAccepted)}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.checkbox, termsAccepted && styles.checkboxChecked]}>
-                {termsAccepted && <MaterialCommunityIcons name="check" size={12} color="#fff" />}
-              </View>
-              <Text style={styles.termsText}>I agree to the Terms of Service and Privacy Policy of Care Connect Guardian</Text>
-            </TouchableOpacity>
-
-            {error && <Text style={styles.errorMessage}>{error}</Text>}
-
-            {/* Sign Up Button */}
-            <Button label="Sign Up" onPress={handleSignup} loading={loading} />
-          </View>
-
-          {/* Sign In Link */}
-          <View style={styles.signinContainer}>
-            <Text style={styles.signinText}>Already have an account? </Text>
-            <TouchableOpacity onPress={() => router.replace('/(auth)/login')} activeOpacity={0.7}>
-              <Text style={styles.signinLink}>Sign In</Text>
-            </TouchableOpacity>
+            {/* Complete Button */}
+            <Button label="Complete Profile" onPress={handleComplete} loading={loading} />
           </View>
         </View>
 
         {/* Security Message */}
         <View style={styles.securityMessage}>
           <MaterialCommunityIcons name="shield-check" size={16} color="#43a28f" />
-          <Text style={styles.securityText}>Your data is encrypted and secure with Care Connect Guardian</Text>
+          <Text style={styles.securityText}>Your data is encrypted and secure</Text>
         </View>
       </View>
 
@@ -316,6 +239,22 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#f0f0f0',
   },
+  header: {
+    marginBottom: 24,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
   form: {
     gap: 16,
   },
@@ -341,91 +280,17 @@ const styles = StyleSheet.create({
     borderColor: '#43a28f',
     backgroundColor: '#f9fffe',
   },
+  inputWrapperDisabled: {
+    backgroundColor: '#f5f5f5',
+  },
   input: {
     flex: 1,
     fontSize: 16,
     color: '#333',
     padding: 0,
   },
-  passwordWrapper: {
-    paddingRight: 8,
-  },
-  passwordInput: {
-    flex: 1,
-    fontSize: 16,
-    color: '#333',
-    padding: 0,
-  },
-  eyeButton: {
-    padding: 8,
-  },
-  termsContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-    marginTop: 8,
-  },
-  checkbox: {
-    width: 16,
-    height: 16,
-    borderWidth: 1.5,
-    borderColor: '#ddd',
-    borderRadius: 3,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 2,
-    flexShrink: 0,
-  },
-  checkboxChecked: {
-    backgroundColor: '#43a28f',
-    borderColor: '#43a28f',
-  },
-  termsText: {
-    fontSize: 12,
-    color: '#666',
-    flex: 1,
-    lineHeight: 18,
-  },
-  errorMessage: {
-    color: '#FF3B30',
-    fontSize: 13,
-    textAlign: 'center',
-    marginVertical: 8,
-  },
-  signinContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 20,
-    paddingTop: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-  },
-  signinText: {
-    fontSize: 13,
-    color: '#666',
-  },
-  signinLink: {
-    fontSize: 13,
-    color: '#43a28f',
-    fontWeight: '600',
-  },
-  securityMessage: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginTop: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: 'rgba(67, 162, 143, 0.05)',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
-  },
-  securityText: {
-    fontSize: 12,
-    color: '#666',
+  inputDisabled: {
+    color: '#999',
   },
   relationshipText: {
     flex: 1,
@@ -454,6 +319,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#999',
     marginTop: 8,
+  },
+  securityMessage: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: 'rgba(67, 162, 143, 0.05)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+  },
+  securityText: {
+    fontSize: 12,
+    color: '#666',
   },
   modalOverlay: {
     flex: 1,

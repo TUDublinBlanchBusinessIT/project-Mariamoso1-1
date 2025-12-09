@@ -1,5 +1,5 @@
 import { useAuth } from '@/Context/Authcontext';
-import { acknowledgeAlert, getUserVisits } from '@/lib/visitService';
+import { acknowledgeAlert, getUserVisits, checkAndFlagMissedVisits } from '@/lib/visitService';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useState } from 'react';
@@ -48,6 +48,10 @@ export default function AlertsScreen() {
 
     try {
       setLoading(true);
+
+      // Check and auto-flag missed visits first
+      await checkAndFlagMissedVisits(user.uid);
+
       const data = await getUserVisits(user.uid);
 
       // Filter only visits with alert statuses and not acknowledged

@@ -1,6 +1,6 @@
 import { Container } from '@/components/ui/container';
 import { useAuth } from '@/Context/Authcontext';
-import { deleteVisit, getUserVisits, updateVisit } from '@/lib/visitService';
+import { deleteVisit, getUserVisits, updateVisit, checkAndFlagMissedVisits } from '@/lib/visitService';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useFocusEffect } from '@react-navigation/native';
@@ -66,6 +66,10 @@ export default function VisitsScreen() {
 
     try {
       setLoading(true);
+
+      // Check and auto-flag missed visits first
+      await checkAndFlagMissedVisits(user.uid);
+
       const data = await getUserVisits(user.uid);
       const mappedVisits: Visit[] = data.map((doc: any) => ({
         id: doc.id || '',

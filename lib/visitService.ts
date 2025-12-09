@@ -143,3 +143,57 @@ export const acknowledgeAlert = async (visitId: string) => {
     throw error;
   }
 };
+
+/**
+ * Check and auto-flag missed visits
+ * Automatically marks scheduled visits as 'missed' if their scheduled time has passed
+ */
+export const checkAndFlagMissedVisits = async (userId: string) => {
+  try {
+    // Get all scheduled visits for the user
+    const q = query(
+      collection(db, 'visits'),
+      where('userId', '==', userId),
+      where('status', '==', 'scheduled')
+    );
+
+    const querySnapshot = await getDocs(q);
+    const now = new Date();
+    const currentDate = now.toISOString().split('T')[0];
+    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+    const updatePromises: Promise<any>[] = [];
+
+    querySnapshot.forEach((docSnapshot) => {
+      const visit = docSnapshot.data() as Visit;
+      const { scheduledDate, scheduledTime } = visit;
+
+      // Check if visit is in the past
+      const isPast =
+        scheduledDate < currentDate ||
+        (scheduledDate === currentDate && scheduledTime < currentTime);
+
+      if (isPast) {
+        // Mark as missed
+        const visitRef = doc(db, 'visits', docSnapshot.id);
+        updatePromises.push(
+          updateDoc(visitRef, {
+            status: 'missed',
+            acknowledged: false // New missed visits should trigger alerts
+          })
+        );
+      }
+    });
+
+    // Execute all updates
+    if (updatePromises.length > 0) {
+      await Promise.all(updatePromises);
+      console.log(`Auto-flagged ${updatePromises.length} missed visit(s)`);
+    }
+
+    return { success: true, flaggedCount: updatePromises.length };
+  } catch (error) {
+    console.error('Error checking missed visits:', error);
+    throw error;
+  }
+};

@@ -1,5 +1,5 @@
 import { useAuth } from '@/Context/Authcontext';
-import { getTodaysVisits, getUserVisits, updateVisitStatus } from '@/lib/visitService';
+import { getTodaysVisits, getUserVisits, updateVisitStatus, checkAndFlagMissedVisits } from '@/lib/visitService';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
@@ -20,7 +20,7 @@ interface Visit {
 }
 
 export default function HomeScreen() {
-  const { user, logout } = useAuth();
+  const { user, userProfile } = useAuth();
   const router = useRouter();
   const [allVisits, setAllVisits] = useState<Visit[]>([]);
   const [todaysVisits, setTodaysVisits] = useState<Visit[]>([]);
@@ -42,6 +42,9 @@ export default function HomeScreen() {
 
     try {
       setLoading(true);
+
+      // Check and auto-flag missed visits first
+      await checkAndFlagMissedVisits(user.uid);
 
       // Load all visits for stats
       const allData = await getUserVisits(user.uid);
@@ -136,24 +139,6 @@ export default function HomeScreen() {
     }
   };
 
-  const handleLogout = async () => {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Sign Out',
-        onPress: async () => {
-          try {
-            await logout();
-            router.replace('/(auth)/login');
-          } catch (error) {
-            Alert.alert('Error', 'Failed to sign out');
-          }
-        },
-        style: 'destructive',
-      },
-    ]);
-  };
-
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Good Morning';
@@ -190,15 +175,8 @@ export default function HomeScreen() {
               <View style={styles.headerContent}>
                 <View>
                   <Text style={styles.greeting}>{getGreeting()}</Text>
-                  <Text style={styles.userName}>{user?.email?.split('@')[0] || 'Guardian'}</Text>
+                  <Text style={styles.userName}>{userProfile?.name || user?.email?.split('@')[0] || 'Guardian'}</Text>
                 </View>
-                <TouchableOpacity
-                  style={styles.logoutButton}
-                  onPress={handleLogout}
-                  activeOpacity={0.7}
-                >
-                  <MaterialCommunityIcons name="logout" size={24} color="#43a28f" />
-                </TouchableOpacity>
               </View>
             </View>
 
@@ -377,9 +355,6 @@ const styles = StyleSheet.create({
     color: '#333',
     marginTop: 4,
     textTransform: 'capitalize',
-  },
-  logoutButton: {
-    padding: 8,
   },
   statsContainer: {
     flexDirection: 'row',
