@@ -1,8 +1,10 @@
 import { useAuth } from '@/Context/Authcontext';
+import { getTodaysVisits, getUserVisits, updateVisitStatus } from '@/lib/visitService';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Alert, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { Alert, ActivityIndicator, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface Visit {
   id: string;
@@ -19,49 +21,69 @@ interface Visit {
 export default function HomeScreen() {
   const { user, logout } = useAuth();
   const router = useRouter();
-  const [visits, setVisits] = useState<Visit[]>([]);
+  const [allVisits, setAllVisits] = useState<Visit[]>([]);
   const [todaysVisits, setTodaysVisits] = useState<Visit[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    loadTodaysVisits();
-  }, []);
+  // Load visits when screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      loadVisits();
+    }, [user?.uid])
+  );
 
-  const loadTodaysVisits = () => {
-    // Mock data - in real app, fetch from Firebase
-    const mockVisits: Visit[] = [
-      {
-        id: '1',
-        caregiverName: 'Sarah Johnson',
-        scheduledDate: new Date().toISOString().split('T')[0],
-        scheduledTime: '09:00',
-        actualArrival: '08:55',
-        status: 'completed',
-        userId: user?.uid || '',
-        timestamp: Date.now(),
-      },
-      {
-        id: '2',
-        caregiverName: 'Michael Chen',
-        scheduledDate: new Date().toISOString().split('T')[0],
-        scheduledTime: '14:00',
-        status: 'scheduled',
-        userId: user?.uid || '',
-        timestamp: Date.now(),
-      },
-      {
-        id: '3',
-        caregiverName: 'Emma Wilson (Substitute)',
-        scheduledDate: new Date().toISOString().split('T')[0],
-        scheduledTime: '18:00',
-        status: 'substituted',
-        notes: 'Regular caregiver unavailable',
-        userId: user?.uid || '',
-        timestamp: Date.now(),
-      },
-    ];
+  const loadVisits = async () => {
+    if (!user?.uid) {
+      setLoading(false);
+      return;
+    }
 
-    setTodaysVisits(mockVisits);
+    try {
+      setLoading(true);
+
+      // Load all visits for stats
+      const allData = await getUserVisits(user.uid);
+      const mappedAllVisits: Visit[] = allData.map((doc: any) => ({
+        id: doc.id || '',
+        caregiverName: doc.caregiverName || '',
+        scheduledDate: doc.scheduledDate || '',
+        scheduledTime: doc.scheduledTime || '',
+        actualArrival: doc.actualArrival,
+        status: doc.status || 'scheduled',
+        notes: doc.notes,
+        userId: doc.userId || '',
+        timestamp: doc.timestamp || Date.now(),
+      }));
+      setAllVisits(mappedAllVisits);
+
+      // Load today's visits for the list
+      const todayData = await getTodaysVisits(user.uid);
+      const mappedTodayVisits: Visit[] = todayData.map((doc: any) => ({
+        id: doc.id || '',
+        caregiverName: doc.caregiverName || '',
+        scheduledDate: doc.scheduledDate || '',
+        scheduledTime: doc.scheduledTime || '',
+        actualArrival: doc.actualArrival,
+        status: doc.status || 'scheduled',
+        notes: doc.notes,
+        userId: doc.userId || '',
+        timestamp: doc.timestamp || Date.now(),
+      }));
+      setTodaysVisits(mappedTodayVisits);
+    } catch (error) {
+      console.error('Error loading visits:', error);
+      Alert.alert('Error', 'Failed to load visits');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadVisits();
+    setRefreshing(false);
+  }, [user?.uid]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -97,6 +119,22 @@ export default function HomeScreen() {
     }
   };
 
+  const handleMarkArrived = async (visitId: string, caregiverName: string) => {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const arrivalTime = `${hours}:${minutes}`;
+
+    try {
+      await updateVisitStatus(visitId, 'completed', arrivalTime);
+      Alert.alert('Success', `Marked ${caregiverName} as arrived`);
+      await loadVisits();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update visit');
+      console.error('Error updating visit:', error);
+    }
+  };
+
   const handleLogout = async () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
       { text: 'Cancel', style: 'cancel' },
@@ -122,61 +160,87 @@ export default function HomeScreen() {
     return 'Good Evening';
   };
 
-  const completedVisits = todaysVisits.filter((v) => v.status === 'completed').length;
-  const upcomingVisits = todaysVisits.filter((v) => v.status === 'scheduled').length;
-  const alerts = todaysVisits.filter((v) => v.status === 'substituted' || v.status === 'delayed').length;
+  // Calculate stats from all visits
+  const completedVisits = allVisits.filter((v) => v.status === 'completed').length;
+  const upcomingVisits = allVisits.filter((v) => v.status === 'scheduled').length;
+
+  // Filter today's visits for ongoing alerts
+  const today = new Date().toISOString().split('T')[0];
+  const ongoingAlerts = todaysVisits.filter((v) => v.status === 'substituted' || v.status === 'delayed').length;
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerContent}>
-            <View>
-              <Text style={styles.greeting}>{getGreeting()}</Text>
-              <Text style={styles.userName}>{user?.email?.split('@')[0] || 'Guardian'}</Text>
-            </View>
-            <TouchableOpacity
-              style={styles.logoutButton}
-              onPress={handleLogout}
-              activeOpacity={0.7}
-            >
-              <MaterialCommunityIcons name="logout" size={24} color="#43a28f" />
-            </TouchableOpacity>
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#43a28f" />
+            <Text style={styles.loadingText}>Loading visits...</Text>
           </View>
-        </View>
+        ) : (
+          <>
+            {/* Header */}
+            <View style={styles.header}>
+              <View style={styles.headerContent}>
+                <View>
+                  <Text style={styles.greeting}>{getGreeting()}</Text>
+                  <Text style={styles.userName}>{user?.email?.split('@')[0] || 'Guardian'}</Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.logoutButton}
+                  onPress={handleLogout}
+                  activeOpacity={0.7}
+                >
+                  <MaterialCommunityIcons name="logout" size={24} color="#43a28f" />
+                </TouchableOpacity>
+              </View>
+            </View>
 
-        {/* Stats Cards */}
-        <View style={styles.statsContainer}>
-          <View style={[styles.statCard, styles.statCard1]}>
+            {/* Stats Cards */}
+            <View style={styles.statsContainer}>
+          <TouchableOpacity
+            style={[styles.statCard, styles.statCard1]}
+            onPress={() => router.push('/(tabs)/visits')}
+            activeOpacity={0.7}
+          >
             <View style={styles.statIconContainer}>
               <MaterialCommunityIcons name="check-circle" size={28} color="#34C759" />
             </View>
             <Text style={styles.statNumber}>{completedVisits}</Text>
             <Text style={styles.statLabel}>Completed</Text>
-          </View>
+          </TouchableOpacity>
 
-          <View style={[styles.statCard, styles.statCard2]}>
+          <TouchableOpacity
+            style={[styles.statCard, styles.statCard2]}
+            onPress={() => router.push('/(tabs)/visits')}
+            activeOpacity={0.7}
+          >
             <View style={styles.statIconContainer}>
               <MaterialCommunityIcons name="clock-outline" size={28} color="#ffd938" />
             </View>
             <Text style={styles.statNumber}>{upcomingVisits}</Text>
             <Text style={styles.statLabel}>Upcoming</Text>
-          </View>
+          </TouchableOpacity>
 
-          <View style={[styles.statCard, styles.statCard3]}>
+          <TouchableOpacity
+            style={[styles.statCard, styles.statCard3]}
+            onPress={() => router.push('/(tabs)/alerts')}
+            activeOpacity={0.7}
+          >
             <View style={styles.statIconContainer}>
-              <MaterialCommunityIcons name="alert-circle" size={28} color={alerts > 0 ? '#fd435e' : '#ddd'} />
+              <MaterialCommunityIcons name="alert-circle" size={28} color={ongoingAlerts > 0 ? '#fd435e' : '#ddd'} />
             </View>
-            <Text style={styles.statNumber}>{alerts}</Text>
-            <Text style={styles.statLabel}>Alerts</Text>
-          </View>
+            <Text style={styles.statNumber}>{ongoingAlerts}</Text>
+            <Text style={styles.statLabel}>Ongoing Alerts</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Section Title */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Today's Visits</Text>
-          <TouchableOpacity onPress={() => router.push('/(tabs)/explore')}>
+          <TouchableOpacity onPress={() => router.push('/(tabs)/visits')}>
             <Text style={styles.viewAllLink}>View History</Text>
           </TouchableOpacity>
         </View>
@@ -231,17 +295,17 @@ export default function HomeScreen() {
                   <View style={styles.visitActions}>
                     <TouchableOpacity
                       style={styles.actionButton}
-                      onPress={() => Alert.alert('Success', 'Arrival marked!')}
+                      onPress={() => handleMarkArrived(visit.id, visit.caregiverName)}
                     >
                       <MaterialCommunityIcons name="check" size={18} color="#43a28f" />
                       <Text style={styles.actionText}>Mark Arrived</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.actionButton}
-                      onPress={() => Alert.alert('Add Notes', 'Add notes functionality')}
+                      onPress={() => router.push('/(tabs)/visits')}
                     >
                       <MaterialCommunityIcons name="pencil" size={18} color="#43a28f" />
-                      <Text style={styles.actionText}>Add Notes</Text>
+                      <Text style={styles.actionText}>View Details</Text>
                     </TouchableOpacity>
                   </View>
                 )}
@@ -255,18 +319,24 @@ export default function HomeScreen() {
           )}
         </View>
 
-        {/* Quick Actions */}
-        <View style={styles.quickActionsContainer}>
-          <Text style={styles.quickActionsTitle}>Quick Actions</Text>
-          <TouchableOpacity style={styles.actionCard} activeOpacity={0.7}>
-            <MaterialCommunityIcons name="plus-circle" size={24} color="#43a28f" />
-            <Text style={styles.actionCardText}>Log Visit</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionCard} activeOpacity={0.7}>
-            <MaterialCommunityIcons name="phone" size={24} color="#43a28f" />
-            <Text style={styles.actionCardText}>Contact Caregiver</Text>
-          </TouchableOpacity>
-        </View>
+            {/* Quick Actions */}
+            <View style={styles.quickActionsContainer}>
+              <Text style={styles.quickActionsTitle}>Quick Actions</Text>
+              <TouchableOpacity
+                style={styles.actionCard}
+                activeOpacity={0.7}
+                onPress={() => router.push('/(tabs)/add-visit')}
+              >
+                <MaterialCommunityIcons name="plus-circle" size={24} color="#43a28f" />
+                <Text style={styles.actionCardText}>Log Visit</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.actionCard} activeOpacity={0.7}>
+                <MaterialCommunityIcons name="phone" size={24} color="#43a28f" />
+                <Text style={styles.actionCardText}>Contact Caregiver</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
 
         {/* Bottom Spacing */}
         <View style={styles.bottomSpacing} />
@@ -497,5 +567,52 @@ const styles = StyleSheet.create({
   },
   bottomSpacing: {
     height: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 100,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#999',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  arrivalInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: 'rgba(52, 199, 89, 0.1)',
+    borderRadius: 8,
+  },
+  arrivalText: {
+    fontSize: 13,
+    color: '#34C759',
+    fontWeight: '500',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  notesContainer: {
+    backgroundColor: '#f5f5f5',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginTop: 12,
+  },
+  viewHistory: {
+    fontSize: 13,
+    color: '#43a28f',
+    fontWeight: '600',
   },
 });
