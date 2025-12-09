@@ -1,21 +1,233 @@
-<!DOCTYPE html>
-<html><head></head><body style="color: rgb(32, 33, 34); font-family: verdana, sans-serif; font-size: 12px;"><p>*****</p>
-<p><strong>Update. When uploading your CA. Please upload 2 files. 1 zip file with your project folder zipped up&nbsp; and 1 PDF/MS Word Doc with your reflection and prompts. Don't include the responses to your prompts as it would be too long. Just the prompts you feel tell the story of how you used AI. If you want you can include a link(s) to your chats</strong></p>
-<p>*****</p>
-<p>You are required to build a Mobile App in React Native.</p>
-<p>You can use the first CA (to design a mobile app). The app does not have to replicate everything you did for CA1 and it will be acceptable even if you only implement a subset of the functionality you envisaged in the first CA. You can, if you want, do something different from the idea you had in CA 1 but in this instance you need to do a new App Statement(not wireframes or process flows) to accompany your submission.</p>
-<p>The App Should at a minimum:</p>
-<ul>
-<li>Save data to Firebase</li>
-<li>Retrieve data from Firebase</li>
-</ul>
-<p>The app should gather some information or interactions from a user, process them in some way an give a result. Ideally it should be useful but it can be just a "Proof of Concept". This means only a small subset of the functionality may be actually working but a User using it should have a clear vision for what the App is supposed to do and how it is supposed to function.<br>The app should use the techniques used over the course of the Semester but, for high marks, students should try and implement some features and components not shown to them during the course of the semester. i.e. skills and abilities developed through the student's own research.</p>
-<p><strong><span style="text-decoration: underline;">UX</span></strong><br>The App should deliver a positive User eXperience. It should look good and be clear and easy to use. The app should be responsive – i.e. it should render well on different screen shapes and sizes.</p>
-<p><span style="text-decoration: underline;"><strong>Use of AI</strong></span><br>Students are expected to use Generative AI to assist with the building of their projects. Students may include any and all tools they discover to be useful in this space. E.g. ChatGPT, Copilot, Codewhisperer etc. A log of prompts and responses should be retained with the date and time of each prompt. Along with the project students should write a 1/2 page reflection on the use of AI in the project covering:<br>• &nbsp; &nbsp;Indicate which tools were used<br>• &nbsp; &nbsp;AI Usefulness – include examples where appropriate.<br>• &nbsp; &nbsp;AI Limitations – include examples where appropriate.<br>• &nbsp; &nbsp;The extent to which AI assisted or impeded your <span style="text-decoration: underline;"><strong>learning</strong></span> in relation to constructing apps using React Native<br>• &nbsp; &nbsp;The extent to which use of AI extended the level of functionality it was possible to include in the App</p>
-<p><span style="text-decoration: underline;"><strong>Project Demonstration</strong></span><br>On the week after Week 13 each student will be required to demonstrate their app during the regularly scheduled lab session from 3-5pm on Monday afternoon or between 8:45am and 10:30am on Wednesday. The demo will typically take 5 minutes</p>
-<ul>
-<li>If you don't show up to demo your project you will be awarded zero</li>
-<li>While demoing your project you need to be able to explain your code and how you wrote it. If I form the view during your demonstration that there's a chance that you didn't do the project yourself, I will stop the demo and it will be flagged for later re-assessment.</li>
-<li>The later re-assessment will be a Viva Voce. This is a University term for an Oral defense of your project. This will last longer(typically up to 30-40 minutes) and you will be required to explain your project in detail, including how you went about it and where you came to learn and understand the approaches that you took. If you cannot answer these questions, it will be assumed the work is not your own and you will be awarded a zero for the project.</li>
-</ul>
-<p></p></body></html>
+# Care Connect Guardian
+
+Care Connect Guardian is a care-monitoring companion app for family members and legal guardians of domiciliary care recipients who need reliable, real-time visibility into visits, caregiver attendance, and welfare status. 
+
+The app connects as a consented third-party layer to agency systems via cross-platform adapters, enforcing role-based access controls and explicit consent scopes. The primary benefit is dependable, explainable confirmation of who attended, when, and what occurred; the secondary benefit is proactive notifications for substitutions or delays with concise welfare summaries and a tamper-evident audit trail.
+
+---
+
+## Core Idea
+
+Help users monitor ongoing care activities of their relatives, children, or ward by providing:
+- **Real-time visibility** into caregiver visits and attendance
+- **Proactive alerts** for substitutions, delays, or absences
+- **Audit trail** of all care interactions with tamper-evident logging
+- **Peace of mind** through transparent, explainable care monitoring
+
+---
+
+## Features Implemented (CA2 Scope)
+
+- **Bottom-tab navigation** across all core screens
+- **Responsive mobile UI** via Expo for cross-platform compatibility
+- **Firebase Firestore integration** for real-time data synchronization
+- **Secure storage** of visit logs, profile information, and profile pictures
+- **Visit logging system** to track caregiver punctuality, attendance, and visit details
+- **Alert system** for substitutions, delays, or caregiver absences
+- **Real-time updates** on visit status and care activities
+- **Profile management** with photo upload capability
+
+---
+
+## Screens
+
+### Home (Dashboard)
+- Overview of completed and upcoming visits
+- Active alerts displayed prominently
+- Today's scheduled visits at a glance
+- Quick access to log new visits
+- Real-time status updates
+
+### Visit Logs
+- Comprehensive visit history with timestamps
+- Caregiver attendance records
+- Visit duration and Punctuality tracking
+
+### Add Log Entry
+- Visit logging form with date/time picker
+- Caregiver selection and visit details
+- Notes field for additional observations
+- Immediate Firestore sync upon submission
+
+### Alerts
+- Ongoing and resolved alerts
+- Substitution notifications
+- Delay warnings
+- Absence alerts
+
+
+
+---
+
+## Tech Stack
+
+- **React Native** — Cross-platform mobile development framework
+- **Expo** — Development platform and toolchain
+- **Expo Router** — File-based routing for navigation
+- **TypeScript** — Type-safe development
+- **React Native StyleSheet** — Component styling
+- **Expo Vector Icons** — Icon library for UI elements
+- **React Native Community Date/Time Picker** — Date and time selection
+- **Firebase & Firestore** — Backend database and authentication
+- **Firebase Storage** — Profile picture and document storage
+
+---
+
+## How to Run Locally
+
+### Prerequisites
+- Node.js (v16 or higher)
+- npm or yarn
+- Expo CLI installed globally
+- Firebase project configured with Firestore and Storage enabled
+
+### Installation Steps
+
+1. **Clone the repository:**
+```bash
+   git clone <repository-url>
+   cd care-connect-guardian
+```
+
+2. **Install dependencies:**
+```bash
+   npm install
+```
+
+3. **Configure Firebase:**
+   - Create a `firebaseConfig.js` file in the project root
+   - Add your Firebase configuration:
+```javascript
+     export const firebaseConfig = {
+       apiKey: "YOUR_API_KEY",
+       authDomain: "YOUR_AUTH_DOMAIN",
+       projectId: "YOUR_PROJECT_ID",
+       storageBucket: "YOUR_STORAGE_BUCKET",
+       messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+       appId: "YOUR_APP_ID"
+     };
+```
+
+4. **Start the development server:**
+```bash
+   npx expo start
+```
+
+5. **Run the app:**
+   - **iOS:** Press `i` in the terminal or scan QR code with Expo Go app
+   - **Android:** Press `a` in the terminal or scan QR code with Expo Go app
+   - **Web:** Press `w` in the terminal for web preview
+
+---
+
+## Project Structure
+```
+project-Mariamoso1-1/
+├── app/                          # Main application screens (Expo Router)
+│   ├── (auth)/                   # Authentication screens
+│   │   ├── login.tsx            # Login screen
+│   │   ├── signup.tsx           # Sign up with profile data
+│   │   └── complete-profile.tsx # Profile completion for existing users
+│   │
+│   ├── (tabs)/                   # Bottom tab navigation screens
+│   │   ├── _layout.tsx          # Tab navigation configuration (5 tabs)
+│   │   ├── index.tsx            # Home/Dashboard screen
+│   │   ├── visits.tsx           # Visit history & management
+│   │   ├── add-visit.tsx        # Add new visit form
+│   │   ├── alerts.tsx           # Alert notifications screen
+│   │   └── profile.tsx          # User profile management
+│   │
+│   ├── _layout.tsx              # Root layout with auth protection
+│   └── +not-found.tsx           # 404 error screen
+│
+├── assets/                       # Static assets
+│   ├── fonts/                   # Custom fonts
+│   └── images/                  # Images and icons
+│       └── logo.png             # App logo
+│
+├── components/                   # Reusable UI components
+│   ├── ui/                      # UI component library
+│   │   ├── button.tsx           # Custom button component
+│   │   ├── container.tsx        # Screen container wrapper
+│   │   ├── haptic-tab.tsx       # Tab with haptic feedback
+│   │   └── icon-symbol.tsx      # Icon symbol component
+│   └── [other components]
+│
+├── constants/                    # App constants
+│   └── theme.ts                 # Color theme definitions
+│
+├── Context/                      # React Context providers
+│   └── Authcontext.tsx          # Authentication & user profile context
+│
+├── config/                       # Configuration files
+│   └── firebaseConfig.ts        # Firebase initialization & exports
+│
+├── hooks/                        # Custom React hooks
+│   └── use-color-scheme.ts      # Dark/light mode hook
+│
+├── lib/                          # Utility libraries & services
+│   ├── imageUtils.ts            # Image picker & compression utilities
+│   ├── userService.ts           # User profile CRUD operations
+│   └── visitService.ts          # Visit CRUD & auto-flagging logic
+│
+├── scripts/                      # Build & utility scripts
+│
+├── .gitignore                   # Git ignore rules
+├── app.json                     # Expo configuration
+├── package.json                 # Dependencies
+├── tsconfig.json                # TypeScript configuration
+└── README.md                    # Project documentation
+
+```
+
+---
+
+## Key Functionalities
+
+### Visit Logging
+- Log caregiver arrivals and departures with precise timestamps
+- Record visit duration and punctuality metrics
+- Add notes and observations for each visit
+- Attach photos or documents as evidence
+
+### Alert System
+- Real-time notifications for caregiver substitutions
+- Delay warnings when caregivers are running late
+- Absence alerts for missed visits
+- Color-coded priority levels (Critical, Warning, Info)
+
+---
+
+## Future Enhancements (Post-CA2)
+
+- Integration with care agency systems via API adapters
+- Advanced analytics and reporting dashboard
+- Multi-user access with role-based permissions
+- Push notifications for mobile alerts
+- Offline mode with sync capabilities
+- Calendar integration for visit scheduling
+- In-app messaging between guardians and care agencies
+
+---
+
+## Assignment Context (CA2)
+
+This project was developed as part of a mobile app development assignment (CA2) focusing on:
+- **Version control best practices** with structured Git commits
+- **Firebase integration** for real-time data management
+- **React Native development** with Expo Router
+- **TypeScript implementation** for type safety
+- **UI/UX design** for mobile-first experiences
+- **Documentation** of development process and AI usage
+
+---
+
+## License
+
+This project is developed for educational purposes as part of university coursework.
+
+---
+
+## Contact
+
+For questions or feedback regarding this project, please contact the development team through the university assignment portal.
